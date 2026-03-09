@@ -1,0 +1,38 @@
+services:
+
+  # When the postgres:16-alpline container service starts, these rules
+  # will load the appropriate env variables and mount a persistent volume.
+  # The data will be loaded in from the sql/init/ directory to create the tables.
+  lit-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: chatuser
+      POSTGRES_PASSWORD: chatpassword
+      POSTGRES_DB: chatdb
+    volumes:
+      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # Spins up a Node.js Express server to handle API requests
+  lit-backend:
+    build: ./backend
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://chatuser:chatpassword@db:5432/chatdb
+    ports:
+      - "3000:3000"
+    depends_on:
+      - lit-db
+
+  # Spins up a production build of the Lit web application on port 80
+  lit-frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - lit-backend
+
+volumes:
+  pgdata:

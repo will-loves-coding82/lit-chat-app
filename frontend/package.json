@@ -1,0 +1,21 @@
+{
+  "name": "chat-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@carbon/web-components": "^2.49.0",
+    "@lit-labs/router": "^0.1.4",
+    "@lit/context": "^1.1.6",
+    "@lit/task": "^1.0.3",
+    "lit": "^3.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3",
+    "vite": "^5.3.3"
+  }
+}

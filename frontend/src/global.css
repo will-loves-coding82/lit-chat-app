@@ -1,0 +1,29 @@
+@import '@carbon/styles/css/styles.css';
+
+
+:root {
+  --color-default: #bababa;
+  --color-primary:#3687f1;
+  --color-success: #30c522;
+  --color-warning: #f59e0b;
+  --color-warning: ##ef4444;
+
+  --color-foreground-primary: #000000;
+  --color-foreground-secondary: #eaeaea;
+
+  --background-primary: #ffffff;
+  --background-secondary: rgb(235, 235, 235);
+
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 64px;
+
+  --font-size-xs: 0.6rem;
+  --font-size-sm: 0.9rem;
+  --font-size-base: 1rem;
+  --font-size-md: 1.1rem;
+  --font-size-lg: 1.2rem;
+  --font-size-xl: 1.5rem;
+}
