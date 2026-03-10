@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: chatpassword
       POSTGRES_DB: chatdb
     volumes:
-      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/sql/:/docker-entrypoint-initdb.d/
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"

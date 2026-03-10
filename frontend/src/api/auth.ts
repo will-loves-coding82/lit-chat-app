@@ -1,5 +1,5 @@
 import { API_URL } from "./constants"
-import { AuthResponse } from "./types"
+import { APIResponseError, AuthResponse } from "./types"
 
 
 export async function login(email: string, password: string) : Promise<AuthResponse> {
@@ -14,20 +14,19 @@ export async function login(email: string, password: string) : Promise<AuthRespo
       }
     )
 
-    if (res.status !== 200) {
-      return {error: new Error("Something went wrong"), user: null, token: null}
+    if (!res.ok) {
+      const errorBody = JSON.parse(await res.text())
+      return { error: new APIResponseError(errorBody.error, res.status), user: null, token: null}
     }
 
     const {token, user} = await res.json()
     localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(user))
 
     return {error: null, user: user, token: token}
   }
   catch(error) {
-    if (error instanceof Error) {
-      return {error: error, user: null, token: null}
-    }
-    return {error: new Error("An unexpected error occurred"), user: null, token: null}
+    return {error: new APIResponseError("An unexpected error occurred", 500), user: null, token: null}
   }
 }
 
@@ -40,14 +39,18 @@ export async function signup(first_name: string, last_name: string, email: strin
       body: JSON.stringify({first_name, last_name, email, password})
     })
 
+    if (!res.ok) {
+      const errorBody = JSON.parse(await res.text())
+      return { error: new APIResponseError(errorBody.error, res.status), user: null, token: null}
+    }
+
     const { token, user } = await res.json();
     localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(user))
+
     return { error: null, user: user, token: token}
 
   } catch (error) { 
-    if (error instanceof Error) {
-      return {error: error, user: null, token: null}
-    }
-    return {error: new Error("An unexpected error occurred"), user: null, token: null}
+    return {error: new APIResponseError("An unexpected error occurred", 500), user: null, token: null}
   }
 }

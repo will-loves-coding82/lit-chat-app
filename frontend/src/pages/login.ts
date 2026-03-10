@@ -26,22 +26,21 @@ export class LogIn extends LitElement {
       return res
     },
     onComplete: (res)=> {
-      if (!!res.user) {
-        console.log('Login successful');
-        this.auth = {
-          ...this.auth,
+      if (!!res) {
+        this.auth.setAuth({
           isAuthenticated: true,
+          user: res.user,
           token: res.token
-        }
-        window.location.href = "/chats"
+        })
+        window.location.href = "/dashboard/chats"
       }
     },
     onError: (error) => {
       console.log("Login failed: ", error)
-      this.auth = {
-        ...this.auth,
+      this.auth.setAuth({
+        user: null,
         isAuthenticated: false
-      }
+      })
     }
   })
 
@@ -87,8 +86,8 @@ export class LogIn extends LitElement {
       background-color: var(--background-primary);
       padding: 2rem;
       border-radius: var(--radius-lg);
-
     }
+
     #login-form #email, #password {
       border-radius: var(--radius-lg) !important;
       margin: 0.5rem 0;
@@ -108,7 +107,7 @@ export class LogIn extends LitElement {
           </cds-stack>
 
           <span id="submit-button-wrapper" >
-            <button-component @click=${this.handleLogIn} fullWidth style="margin-top: 1rem" variant="solid" color="primary" radius="sm" size="md" slot="label"><p slot="label">sign up</p></button-component>
+            <button-component @click=${this.handleLogIn} fullWidth style="margin-top: 1rem" variant="solid" color="primary" radius="sm" size="md"><p slot="label">log in</p></button-component>
           </span>
       </cds-form>
     `

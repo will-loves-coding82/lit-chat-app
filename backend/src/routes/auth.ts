@@ -4,6 +4,14 @@ import jwt from "jsonwebtoken"
 import { pool } from '../db';
 import 'dotenv/config';
 
+interface User {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+}
+
 export const authRouter = Router();
 authRouter.post("/login", async(_req: Request, res: Response) => {
     console.log('Handling POST request /auth/login')
@@ -12,21 +20,24 @@ authRouter.post("/login", async(_req: Request, res: Response) => {
       const result = await pool.query(
         `SELECT * FROM lit_db.users WHERE email = $1`, [email]
       )
-      const user = result.rows[0]
+      const user = result.rows[0] as User
       if (!user) {
         return res.status(404).json({error: 'User does not exist'})
       }
 
       const passwordsMatch = await bcrypt.compare(password, user.password)
-      if (passwordsMatch) {
+      if (!passwordsMatch) {
         return res.status(401).json({error: 'Invalid credentials'})
       }
 
+      console.log("Credentials are valid")
       const token = jwt.sign({userId: user.id}, process.env.JWT_SECRET!, {algorithm: 'HS256', expiresIn: "1h"})
-      res.json({token: token, user: user})
+      const { password: _, ...userWithoutPassword } = user
+      console.log(userWithoutPassword)
+      res.json({token: token, user: userWithoutPassword})
     } catch(err) {
       console.error(err)
-      res.status(500).json({error: "Failed to login"})
+      res.status(500).json({error: "Failed to login: " + err})
     }
 });
 
@@ -35,32 +46,32 @@ authRouter.post("/signup", async(_req: Request, res: Response) => {
 
   try {
     const {first_name, last_name, email, password} = _req.body;
-    const hash = bcrypt.hash(password, 12)
+    const hash = await bcrypt.hash(password, 12)
     const result = await pool.query(
-      `INSERT INTO lit_db.users (first_name, last_name, email, password) VALUES($1, $2, $3, $4) RETURNING id`, [first_name, last_name, email, hash]
+      `INSERT INTO lit_db.users (first_name, last_name, email, password) VALUES($1, $2, $3, $4) RETURNING id, first_name, last_name, email`, [first_name, last_name, email, hash]
     )
-
-    const user = result.rows[0]
-    const token = jwt.sign({userId: user.id}, process.env.JWT_SECRET!, {algorithm: 'HS256', expiresIn: "1h"})
-    console.log("Inserted user: ", user)
+    const user = result.rows[0] as User
+    const token = jwt.sign({userId: user.id}, process.env.JWT_SECRET!, {algorithm: 'HS256', expiresIn: "1m"})
     res.json({token: token, user: user})
   } catch(err) {
     console.error(err)
-    res.status(500).json({error: "Failed to sign up"})
+    res.status(500).json({error: "Failed to sign up: " + err})
   }
 })
 
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+
   const token = req.headers.authorization?.split(' ')[1]
   if (!token) {
-    return res.status(401).json({error: 'Unauthorized'})
+    return res.status(401).json({error: 'No token found'})
   }
 
-  try {
-    jwt.verify(token, process.env.JWT_SECRET!)
+  jwt.verify(token, process.env.JWT_SECRET!, function(err, decoded) {
+    if (err) {
+      console.log("error verifying token: ", err)
+      return res.status(401).json({error: err.message})
+    }
     next()
-  } catch(error) {
-    res.status(401).json({error: 'Invalid token'})
-  }
+  })
 }

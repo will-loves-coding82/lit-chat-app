@@ -1,5 +1,5 @@
 import { css, html, LitElement } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { Router } from '@lit-labs/router';
 import './login';
 import './signup';
@@ -9,15 +9,20 @@ import '../components/link'
 import '../pages/dashboard/dashboard-router'
 import { provide } from '@lit/context';
 import { AuthContext, authContext } from '../context/authContext';
+import { User } from '../api/types';
 
 @customElement('root-router')
 export class RootRouter extends LitElement {
   @provide({ context: authContext })
 
-  // Create a state to propogate context updates
-  @state() private auth: AuthContext = {
+  // Create a reactive property to update and propogate context updates
+  @property({attribute: false}) auth: AuthContext = {
+    user: null,
     isAuthenticated: false,
     token: null,
+    setAuth: (newAuth) => {
+      this.auth = { ...this.auth, ...newAuth, setAuth: this.auth.setAuth };
+    }
   };
 
   private router = new Router(this, [
@@ -31,19 +36,32 @@ export class RootRouter extends LitElement {
     super.connectedCallback();
     this.router.hostConnected();
     this.checkAuth()
+    window.removeEventListener('storage', this._handleStorageChange)
   }
 
   disconnectedCallback() {
     this.router.hostDisconnected();
     super.disconnectedCallback();
+    window.removeEventListener('storage', this._handleStorageChange)
   }
 
+  private _handleStorageChange = (e: StorageEvent) => {
+    if (e.key === 'token' && !e.newValue) {
+      window.location.href = '/'
+    }
+  }
+
+  // This will always rerun on refresh and page navigation
   checkAuth() {
     const token = localStorage.getItem("token")
-    this.auth = {
+    const user = localStorage.getItem("user")
+    this.auth.setAuth({
+      ...this.auth,
       isAuthenticated: !!token,
+      user: JSON.parse(user ?? "") as User,
       token: token
-    }
+    })
+    console.log("Checked auth user: ", this.auth.user)
   }
 
   static styles = css`
@@ -61,7 +79,7 @@ export class RootRouter extends LitElement {
       padding: 0.2rem 10rem;
       margin: auto;
       background-color: var(--background-primary);
-      border-bottom: 1px solid rgb(195, 195, 195);
+      border-bottom: 1px solid var(--color-default);
     }
 
     @media (max-width: 1240px) {
@@ -84,10 +102,8 @@ export class RootRouter extends LitElement {
     
   `
 
-  render() {
-    const isDashboard = window.location.pathname.startsWith('/dashboard');
+  protected render() {
     return html`
-
         <nav>
           <link-component href="/" color="default">
             <p slot="label">Home</p>

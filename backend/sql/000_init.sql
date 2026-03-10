@@ -10,13 +10,14 @@ CREATE TABLE IF NOT EXISTS lit_db.users (
 
 CREATE TABLE IF NOT EXISTS lit_db.chats (
   id   SERIAL PRIMARY KEY,
-  name TEXT NOT NULL
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS lit_db.members (
   id        SERIAL PRIMARY KEY,
   member_id INT NOT NULL,
   chat_id   INT NOT NULL,
+  last_seen INT,
   CONSTRAINT fk_member_id FOREIGN KEY (member_id) REFERENCES lit_db.users(id),
   CONSTRAINT fk_chat_id   FOREIGN KEY (chat_id)   REFERENCES lit_db.chats(id)
 );

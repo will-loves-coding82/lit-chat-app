@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../db.js';
+import { authMiddleware } from './auth.js';
 
 export const messagesRouter = Router();
 
 // GET /api/messages — fetch recent message history
-messagesRouter.get('/messages/', async (req: Request, res: Response) => {
+messagesRouter.get('/messages/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const limit = Math.min(parseInt((req.query.limit as string) || '50'), 200);
     const { rows } = await pool.query(

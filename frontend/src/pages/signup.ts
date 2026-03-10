@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import '@carbon/web-components/es/components/form/form.js';
 import '@carbon/web-components/es/components/stack/stack.js';
 import '@carbon/web-components/es/components/text-input/text-input.js';
@@ -17,6 +17,9 @@ export class SignUp extends LitElement {
   @state() private _email = ""
   @state() private _password = ""
 
+  @query("#password") passwordInput!: HTMLInputElement
+  @query("#confirm-password") confirmPasswordInput!: HTMLInputElement
+
   @consume({ context: authContext, subscribe: true })
   @state() auth!: AuthContext;
   
@@ -29,22 +32,22 @@ export class SignUp extends LitElement {
       return res
     },
     onComplete: (res)=> {
-      if (!!res) {
+      if (!!res.user) {
         console.log('Signup successful:', res.user);
-        this.auth = {
-          ...this.auth,
+        this.auth.setAuth({
           isAuthenticated: true,
+          user: res.user,
           token: res.token
-        }
-        window.location.href = "/chats"
+        })
+        window.location.href = "/dashboard/chats"
       }
     },
     onError: () => {
       console.log("sign up failed")
-      this.auth = {
-        ...this.auth,
+      this.auth.setAuth({
+        user: null,
         isAuthenticated: false
-      }
+      })
     }
   })
 
@@ -53,20 +56,17 @@ export class SignUp extends LitElement {
   }
 
   private handlePasswordChange() {
-    const password = this.shadowRoot?.querySelector<HTMLInputElement>("#password")
-    const confirmPassword = this.shadowRoot?.querySelector<HTMLInputElement>("#confirm-password")
-
-    if (password && confirmPassword) {
-      const passwordValue = password.value
-      const confirmPasswordValue = confirmPassword.value
+    if (this.passwordInput && this.confirmPasswordInput) {
+      const passwordValue = this.passwordInput.value
+      const confirmPasswordValue = this.confirmPasswordInput.value
 
       if (passwordValue != confirmPasswordValue) {
-        confirmPassword.setAttribute('invalid', '')
-        confirmPassword.setAttribute('invalid-text', 'passwords do not match')
+        this.confirmPasswordInput.setAttribute('invalid', '')
+        this.confirmPasswordInput.setAttribute('invalid-text', 'passwords do not match')
       }
       else {
-        confirmPassword.removeAttribute('invalid')
-        confirmPassword.removeAttribute('invalid-text')
+        this.confirmPasswordInput.removeAttribute('invalid')
+        this.confirmPasswordInput.removeAttribute('invalid-text')
         this._password = passwordValue
       }
     }
@@ -123,11 +123,7 @@ export class SignUp extends LitElement {
       <header>
         <h1 class="title">Create an account</h1>
       </header>
-
-      <p>${this._first_name}</p>
-      <p>${this._last_name}</p>
-      <p>${this._email}</p>
-            <p>${this._password}</p>
+      
       <cds-form id="signup-form">
           <cds-stack gap="16">
               <cds-text-input @input=${(e: Event) => this._first_name = (e.target as HTMLInputElement).value} id="first-name" label="First Name" placeholder="last name"></cds-text-input>
