@@ -27,18 +27,12 @@ function debounce(func: (...args: any[]) => any, wait: number) {
   };
 }
 
-
 @customElement('chats-page')
 export class ChatsPage extends LitElement {
   @consume({ context: authContext, subscribe: true })
   @state() auth!: AuthContext;
-
   @property() activeChatId: string | undefined;  // driven by dashboard-router
-  updated(changedProperties: Map<string, unknown>) {
-  if (changedProperties.has('activeChatId')) {
-    console.log('activeChatId changed:', this.activeChatId);
-  }
-}
+
   @state() selectedRecipient: User | undefined = undefined
   @state() chatsForUser: Array<Chat> = []
   @state() searchMatches: Array<User> = []
@@ -52,11 +46,11 @@ export class ChatsPage extends LitElement {
       if (!userId) throw new Error("User ID undefined");
       const res = await getAllsChatsForUser(userId);
       if (res.error) {
-        if (res.error.status == 401) this._dispatchUnauthorized(res.error.message);
+        if (res.error.status == 401) {
+          this.dispatchUnauthorized(res.error.message)
+        }
         throw res.error;
       }
-
-      console.log("Chats for user: ", res.chats)
       return res.chats;
     },
     onComplete: (chats) => { this.chatsForUser = chats },
@@ -69,7 +63,7 @@ export class ChatsPage extends LitElement {
       if (!userId || !recipientId) throw new Error("User ID or recipient ID is undefined");
       const res = await getOrCreateChat(userId, recipientId);
       if (res.error) {
-        if (res.error.status == 401) this._dispatchUnauthorized(res.error.message);
+        if (res.error.status == 401) this.dispatchUnauthorized(res.error.message);
         throw res.error;
       }
       return res.chat?.id;
@@ -85,7 +79,7 @@ export class ChatsPage extends LitElement {
     task: async ([query]: readonly [string]) => {
       const res = await searchUsers(query);
       if (res.error) {
-        if (res.error.status == 401) this._dispatchUnauthorized(res.error.message);
+        if (res.error.status == 401) this.dispatchUnauthorized(res.error.message);
         throw res.error;
       }
       return res.matches;
@@ -94,7 +88,7 @@ export class ChatsPage extends LitElement {
     onError: (error) => { console.error(error) }
   })
 
-  private _dispatchUnauthorized(message: string) {
+  private dispatchUnauthorized(message: string) {
     this.dispatchEvent(new CustomEvent('unauthorized', {
       detail: { message },
       bubbles: true,
@@ -303,10 +297,9 @@ export class ChatMessageWindow extends LitElement {
       if (!chatId) throw new Error("chatId is not defined");
       const res = await getChatMessages(chatId)
       if (res.error) {
-        throw res.error
+        if (res.error.status == 401) this.dispatchUnauthorized(res.error.message);
+        throw res.error;
       }
-
-      console.log("Got messages: ", res.messages)
       this.messages = res.messages
     },
     onComplete: () => {this.scrollToBottom()},
@@ -317,15 +310,42 @@ export class ChatMessageWindow extends LitElement {
     task: async ([chatId]) => {
       const res = await getChatSummary(chatId);
       if (res.error) {
-        // if (res.error.status == 401) this._dispatchUnauthorized(res.error.message);
+        if (res.error.status == 401) this.dispatchUnauthorized(res.error.message);
         throw res.error;
       }
-      console.log(res)
       return res;
     },
     onError: (error) => { console.error(error) },
     args: () => [this.chatId]
   })
+
+
+  private dispatchUnauthorized(message: string) {
+    this.dispatchEvent(new CustomEvent('unauthorized', {
+      detail: { message },
+      bubbles: true,
+      composed: true
+    }))
+  }
+
+
+  updated(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has("chatId")) {
+      console.log("chatId changed")
+      this.closeWebSocket()
+      this.messages = [];
+      this.recipientStatusMessage = null;
+      this.connectWs()
+    }
+  }
+
+  private closeWebSocket() {
+    if (this.ws){
+      this.ws.onclose = null;
+      this.ws?.close()
+      this.ws = null;
+    }
+  }
 
   private connectWs() {
     const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -340,7 +360,6 @@ export class ChatMessageWindow extends LitElement {
         content: ""
       }
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        console.log("sending join message to server")
         this.ws!.send(JSON.stringify(joinMessage))
       }
     };
@@ -415,6 +434,7 @@ export class ChatMessageWindow extends LitElement {
         }, 1500)
     })
   }
+
   connectedCallback() {
     super.connectedCallback();
     this.connectWs();
@@ -451,13 +471,11 @@ export class ChatMessageWindow extends LitElement {
         content: this.input
       }
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        console.log("sending message to server: ", message)
         this.ws!.send(JSON.stringify(message))
       }
 
       this.messageInputElement.setAttribute("value", "")
   }
-  
 
   static styles = css`
     :host {

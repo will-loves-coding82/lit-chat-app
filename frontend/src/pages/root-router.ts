@@ -36,16 +36,17 @@ export class RootRouter extends LitElement {
     super.connectedCallback();
     this.router.hostConnected();
     this.checkAuth()
-    window.removeEventListener('storage', this._handleStorageChange)
+    window.removeEventListener('storage', this.handleStorageChange)
   }
 
   disconnectedCallback() {
     this.router.hostDisconnected();
     super.disconnectedCallback();
-    window.removeEventListener('storage', this._handleStorageChange)
+    window.removeEventListener('storage', this.handleStorageChange)
   }
 
-  private _handleStorageChange = (e: StorageEvent) => {
+  // If the token happened to be deleted, navigate to home
+  private handleStorageChange = (e: StorageEvent) => {
     if (e.key === 'token' && !e.newValue) {
       window.location.href = '/'
     }
@@ -61,7 +62,6 @@ export class RootRouter extends LitElement {
       user: JSON.parse(user ?? "") as User,
       token: token
     })
-    console.log("Checked auth user: ", this.auth.user)
   }
 
   static styles = css`

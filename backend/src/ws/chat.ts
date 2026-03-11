@@ -50,7 +50,6 @@ function broadcastStatusToChatRoom(chat_id: number, message: BroadcastMessage): 
     const clientData = clients.get(client)
     if (!clientData) continue
     if (clientData.id !== message.sender_id) {
-      console.log("broadcasting status to recipient: ", clientData)
       client.send(JSON.stringify({ type: message.type, message: message}))
     }
   }
@@ -61,7 +60,6 @@ function broadcastMessageToChatRoom(ws: WebSocket, chat_id: number, message: Bro
   if (!room) return
   console.log("broadcasting message to all clients: ", message)
   for (const client of room) {
-    console.log("sending message to client: ", client)
       if (client.readyState !== WebSocket.OPEN) continue
       client.send(JSON.stringify({ type: message.type, message: message}))
   }

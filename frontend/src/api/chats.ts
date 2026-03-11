@@ -7,7 +7,8 @@ export async function getAllsChatsForUser(userId: number) : Promise<GetAllChatsR
       `${API_URL}/chats/all?userId=${userId}`, {
         method:'GET', 
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
     })
 
@@ -30,7 +31,8 @@ export async function getOrCreateChat(userId: number, recipientId: number) : Pro
       `${API_URL}/chats/findOrCreate`, {
         method:'POST', 
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({userId: userId, recipientId: recipientId})
     })
@@ -54,7 +56,8 @@ export async function getChatSummary(chatId: string) : Promise<GetChatSummaryRes
       `${API_URL}/chats/${chatId}/summary`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
     })
 
@@ -76,7 +79,8 @@ export async function getChatMessages(chatId: string) : Promise<GetChatMessagesR
     const res = await fetch(`${API_URL}/chats/${chatId}/messages`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     })
 

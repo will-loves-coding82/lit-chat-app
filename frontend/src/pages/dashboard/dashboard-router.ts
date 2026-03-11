@@ -1,15 +1,20 @@
 import { consume } from "@lit/context";
 import { css, html, LitElement } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, query, state } from "lit/decorators.js";
 import { AuthContext, authContext } from "../../context/authContext";
 import './chats-page';
+import '@carbon/web-components/es/components/modal/modal-body.js';
+import '@carbon/web-components/es/components/modal/modal-header.js';
+import '@carbon/web-components/es/components/modal/modal.js';
 
+import '@carbon/web-components/es/components/modal/modal-footer-button.js';
 @customElement('dashboard-router')
 export class DashboardRouter extends LitElement {
   @consume({ context: authContext, subscribe: true })
   @state() auth!: AuthContext;
-  @state() _activeChatId: string | undefined;
-
+  @state() private activeChatId: string | undefined;
+  @query("#unauthorized-modal") unauthorizedModal! : HTMLElement;
+  
   static styles = css`
     nav {
       position: fixed;
@@ -36,29 +41,43 @@ export class DashboardRouter extends LitElement {
       font-size: 0.8rem;
       color: black;
     }
+
+    #unauthorized-modal {
+      z-index: 2000;
+      overflow: hidden;
+    }
   `
   connectedCallback() {
     super.connectedCallback();
-    this._onRouteChange();
-    window.addEventListener('popstate', this._onRouteChange);
+    this.onRouteChange();
+    window.addEventListener('popstate', this.onRouteChange);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    window.removeEventListener('popstate', this._onRouteChange);
+    window.removeEventListener('popstate', this.onRouteChange);
   }
 
-  private _onRouteChange = () => {
+  private onRouteChange = () => {
     const match = window.location.pathname.match(/\/chats\/(.+)/);
-    this._activeChatId = match?.[1];
+    this.activeChatId = match?.[1];
   }
 
-  private _unauthorizedListener = (e: CustomEvent) => {
-    window.location.href = "/login"
+  private unauthorizedListener = (e: CustomEvent) => {
+    this.unauthorizedModal.setAttribute("open", "")
   }
 
   render() {
     return html`
+      <cds-modal id="unauthorized-modal" aria-label="" prevent-close-on-click-outside="" >
+        <cds-modal-header>
+          <cds-modal-close-button close-button-label="Close"></cds-modal-close-button>
+          <cds-modal-heading>You are unauthorized. Please log in.</cds-modal-heading>
+        </cds-modal-header>
+        <cds-modal-footer>
+          <cds-modal-footer-button @click=${()=> window.location.href = "/login"} kind="secondary" data-modal-close="">log in</cds-modal-footer-button>
+      </cds-modal-footer>
+      </cds-modal>
       <nav>
         <link-component href="/" color="default">
           <p slot="label">Home</p>
@@ -69,8 +88,8 @@ export class DashboardRouter extends LitElement {
         </span>
       </nav>
 
-      <main @unauthorized=${this._unauthorizedListener as EventListener}>
-        <chats-page .activeChatId=${this._activeChatId}></chats-page>
+      <main @unauthorized=${this.unauthorizedListener as EventListener}>
+        <chats-page .activeChatId=${this.activeChatId}></chats-page>
       </main>
     `
   }

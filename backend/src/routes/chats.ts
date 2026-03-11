@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { pool } from "../db";
+import { authMiddleware } from './auth';
 
 export const chatsRouter = Router();
 
 // Gets all the chats that a user belongs to
-chatsRouter.get('/all', async (_req: Request, res: Response) => {
+chatsRouter.get('/all', authMiddleware, async (_req: Request, res: Response) => {
   console.log('Handling GET request /chats/all')
   const userId = _req.query["userId"] as string;
 
@@ -34,7 +35,7 @@ chatsRouter.get('/all', async (_req: Request, res: Response) => {
 })
 
 // Returns the chat data and members
-chatsRouter.get('/:chatId/summary', async(_req: Request, res:Response) => {
+chatsRouter.get('/:chatId/summary', authMiddleware, async(_req: Request, res:Response) => {
   console.log('Handling GET request /chats/summmary')
   const chatId = _req.params["chatId"] as string;
 
@@ -57,7 +58,7 @@ chatsRouter.get('/:chatId/summary', async(_req: Request, res:Response) => {
   }
 })
 
-chatsRouter.get('/:chatId/messages/',  async (_req: Request, res: Response) => {
+chatsRouter.get('/:chatId/messages/', authMiddleware, async (_req: Request, res: Response) => {
   const chatId = _req.params["chatId"] as string;
   console.log('Handling GET request /chats/:chatId/messages')
 
@@ -75,7 +76,7 @@ chatsRouter.get('/:chatId/messages/',  async (_req: Request, res: Response) => {
 });
 
 
-chatsRouter.post('/findOrCreate', async (_req: Request, res: Response) => {
+chatsRouter.post('/findOrCreate', authMiddleware, async (_req: Request, res: Response) => {
   console.log('Handling POST request /chats/findOrCreate')
   const { userId, recipientId } = _req.body
 
