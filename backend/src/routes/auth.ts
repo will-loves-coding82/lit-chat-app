@@ -13,6 +13,28 @@ interface User {
 }
 
 export const authRouter = Router();
+
+authRouter.get("/validateToken", async(_req: Request, res: Response) => {
+  console.log("Handling GET request /validateToken")
+  const token = _req.headers.authorization?.split(' ')[1]
+   if (!token) {
+    return res.status(401).json({error: 'No token found'})
+  }
+
+  try {
+     jwt.verify(token, process.env.JWT_SECRET!, function(err, decoded) {
+      if (err) {
+        console.log("error verifying token: ", err)
+        return res.status(401).json({error: err.message})
+      }
+      res.json({token: token, message: "token is valid"})
+    })
+  } catch(error) {
+      console.error(error)
+      res.status(500).json({error: "Failed to validate token: " + error})
+  }
+})
+
 authRouter.post("/login", async(_req: Request, res: Response) => {
     console.log('Handling POST request /auth/login')
     try {
@@ -60,9 +82,8 @@ authRouter.post("/signup", async(_req: Request, res: Response) => {
 })
 
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
-
-  const token = req.headers.authorization?.split(' ')[1]
+export function authMiddleware(_req: Request, res: Response, next: NextFunction) {
+  const token = _req.headers.authorization?.split(' ')[1]
   if (!token) {
     return res.status(401).json({error: 'No token found'})
   }

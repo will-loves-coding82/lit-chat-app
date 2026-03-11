@@ -50,10 +50,16 @@ export type Chat = {
   recipient: User
 }
 
+export type ValidateTokenResponse = {
+  error: APIResponseError | null
+  message?: string | undefined
+}
+
 export type AuthResponse = {
   error: APIResponseError | null
   user: User | null
   token: string | null
+  message?: string | undefined
 }
 
 export type GetChatSummaryResponse = {

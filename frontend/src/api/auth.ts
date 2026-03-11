@@ -1,6 +1,29 @@
 import { API_URL } from "./constants"
-import { APIResponseError, AuthResponse } from "./types"
+import { APIResponseError, AuthResponse, ValidateTokenResponse } from "./types"
 
+
+export async function validateToken() : Promise<ValidateTokenResponse> {
+  try {
+    const res = await fetch(
+      `${API_URL}/auth/validateToken`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    )
+
+    const { message } = await res.json()
+    if (!res.ok) {
+      const errorBody = JSON.parse(await res.text())
+      return { error: new APIResponseError(errorBody.error, res.status)}
+    }
+    return { error: null, message: message }
+  } catch(error) {
+    return {error: new APIResponseError("An unexpected error occurred", 500)}
+  }
+}
 
 export async function login(email: string, password: string) : Promise<AuthResponse> {
   try {

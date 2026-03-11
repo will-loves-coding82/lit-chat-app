@@ -54,7 +54,7 @@ export class ChatsPage extends LitElement {
       return res.chats;
     },
     onComplete: (chats) => { this.chatsForUser = chats },
-    onError: (error) => { console.error(error) },
+    onError: (error) => { console.log(error) },
     args: () => [this.auth.user?.id]
   })
 

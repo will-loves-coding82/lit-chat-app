@@ -1,13 +1,13 @@
 import { consume } from "@lit/context";
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, query, state } from "lit/decorators.js";
 import { AuthContext, authContext } from "../../context/authContext";
 import './chats-page';
 import '@carbon/web-components/es/components/modal/modal-body.js';
 import '@carbon/web-components/es/components/modal/modal-header.js';
 import '@carbon/web-components/es/components/modal/modal.js';
-
 import '@carbon/web-components/es/components/modal/modal-footer-button.js';
+
 @customElement('dashboard-router')
 export class DashboardRouter extends LitElement {
   @consume({ context: authContext, subscribe: true })
@@ -62,6 +62,11 @@ export class DashboardRouter extends LitElement {
     window.removeEventListener('popstate', this.onRouteChange);
   }
 
+  private handleLogout = () => {
+    localStorage.removeItem("token");
+    this.unauthorizedModal.setAttribute("open", "");
+  }
+
   private onRouteChange = () => {
     const match = window.location.pathname.match(/\/chats\/(.+)/);
     this.activeChatId = match?.[1];
@@ -70,6 +75,8 @@ export class DashboardRouter extends LitElement {
   private unauthorizedListener = (e: CustomEvent) => {
     this.unauthorizedModal.setAttribute("open", "")
   }
+
+
 
   render() {
     return html`
@@ -87,7 +94,7 @@ export class DashboardRouter extends LitElement {
         </link-component>
         <span id="auth-btn-group">
           <p style="color: black;">${this.auth.user?.first_name}</p>
-          <button-component variant="solid" color="primary" size="md" slot="label"><p slot="label">log out</p></button-component>
+          <button-component @click=${this.handleLogout} variant="solid" color="primary" size="md" slot="label"><p slot="label">log out</p></button-component>
         </span>
       </nav>
 
