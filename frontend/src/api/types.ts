@@ -5,13 +5,14 @@ export type User = {
   email: string
 }
 
-export type MessageType = "user_joined" | "user_typing_start" | "user_typing_stop" | "user_left" | "message";
+export type MessageType = "user_joined" | "user_typing_start" | "user_typing_stop" | "user_left" | "room_state" | "message" ;
 
 export const MESSAGE_TYPES: Record<string, MessageType> = {
   USER_JOINED: "user_joined",
   USER_TYPING_START: "user_typing_start",
   USER_TYPING_STOP: "user_typing_stop",
   USER_LEFT: "user_left",
+  ROOM_STATE: "room_state",
   MESSAGE: "message"
 };
 
@@ -24,13 +25,14 @@ export type SenderMessage = {
 }
 
 export type IncomingMessage = {
-  id: number;
+  id?: number | undefined;
   type: MessageType;
   chat_id: number;
   sender_id: number;
-  sender_mame: string;
-  content: string;
+  sender_name: string;
   timestamp: string;
+  content?: string | undefined;
+  members?: number[] | undefined;
 }
 
 export type Message = {

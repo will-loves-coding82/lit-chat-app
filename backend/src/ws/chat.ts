@@ -2,13 +2,14 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
 import { pool } from '../db.js';
 
-export type MessageType = "user_joined" | "user_typing_start" | "user_typing_stop" | "user_left" | "message";
+export type MessageType = "user_joined" | "user_typing_start" | "user_typing_stop" | "user_left" | "room_state" | "message" ;
 
-const MESSAGE_TYPES: Record<string, MessageType> = {
+export const MESSAGE_TYPES: Record<string, MessageType> = {
   USER_JOINED: "user_joined",
   USER_TYPING_START: "user_typing_start",
   USER_TYPING_STOP: "user_typing_stop",
   USER_LEFT: "user_left",
+  ROOM_STATE: "room_state",
   MESSAGE: "message"
 };
 
@@ -28,19 +29,20 @@ type ClientData = {
 }
 
 type BroadcastMessage = {
-  id: number;
+  id?: number | undefined;
   type: MessageType;
   chat_id: number;
   sender_id: number;
   sender_name: string;
-  content: string;
   timestamp: string;
+  content?: string | undefined;
+  members?: number[] | undefined;
 }
 
 const clients = new Map<WebSocket, ClientData>()
 const rooms = new Map<number, Set<WebSocket>>()
 
-function broadcastStatusToChatRoom(chat_id: number, message: BroadcastMessage): void {
+function broadcastStatusToRecipient(chat_id: number, message: BroadcastMessage): void {
   const room = rooms.get(chat_id)
   if (!room) return
 
@@ -55,17 +57,16 @@ function broadcastStatusToChatRoom(chat_id: number, message: BroadcastMessage): 
   }
 }
 
-function broadcastMessageToChatRoom(ws: WebSocket, chat_id: number, message: BroadcastMessage): void {
+function broadcastMessageToChatRoom(chat_id: number, message: BroadcastMessage): void {
   const room = rooms.get(chat_id)
   if (!room) return
-  console.log("broadcasting message to all clients: ", message)
   for (const client of room) {
+      const clientData = clients.get(client)
+      console.log("broadcasting message to client: ", clientData)
       if (client.readyState !== WebSocket.OPEN) continue
       client.send(JSON.stringify({ type: message.type, message: message}))
   }
 }
-
-
 
 export function attachWebSocket(server: Server): WebSocketServer {
   const wss = new WebSocketServer({ server, path: '/ws' });
@@ -117,13 +118,32 @@ export function attachWebSocket(server: Server): WebSocketServer {
             content: `${msg.sender_name} joined`,
             timestamp: new Date().toISOString()
           }
-          broadcastStatusToChatRoom(msg.chat_id, joinedMessage)
+
+          const room = rooms.get(msg.chat_id)
+          const connectedUsers : number[] = []
+          room?.forEach(clientWs => {
+            const clientData = clients.get(clientWs)
+            if (clientData) connectedUsers.push(clientData.id)
+          })
+
+          console.log("connected users in room: ", connectedUsers)
+
+          const roomStateMessage : BroadcastMessage = {
+            type: MESSAGE_TYPES.ROOM_STATE,
+            chat_id: msg.chat_id,
+            sender_id: msg.sender_id,
+            sender_name: msg.sender_name,
+            members: connectedUsers,
+            timestamp: new Date().toISOString()
+          }
+
+          broadcastMessageToChatRoom(msg.chat_id, roomStateMessage)
+          broadcastStatusToRecipient(msg.chat_id, joinedMessage)
           return
 
         case "user_typing_start":
           client.isTyping = true
           const typingStartMessage : BroadcastMessage = {
-            id: -1,
             type: MESSAGE_TYPES.USER_TYPING_START,
             chat_id: msg.chat_id,
             sender_id: msg.sender_id,
@@ -131,21 +151,20 @@ export function attachWebSocket(server: Server): WebSocketServer {
             content: `${msg.sender_name} is typing...`,
             timestamp: new Date().toISOString()
           }
-          broadcastStatusToChatRoom(msg.chat_id, typingStartMessage)
+          broadcastStatusToRecipient(msg.chat_id, typingStartMessage)
           return
 
         case "user_typing_stop":
           client.isTyping = false
           const typingStopMessage : BroadcastMessage = {
-            id: -1,
+
             type: MESSAGE_TYPES.USER_TYPING_STOP,
             chat_id: msg.chat_id,
             sender_id: msg.sender_id,
             sender_name: msg.sender_name,
-            content: `${msg.sender_name} stopped typing`,
             timestamp: new Date().toISOString()
           }
-          broadcastStatusToChatRoom(msg.chat_id, typingStopMessage)
+          broadcastStatusToRecipient(msg.chat_id, typingStopMessage)
           return
 
         case "message":
@@ -166,7 +185,7 @@ export function attachWebSocket(server: Server): WebSocketServer {
               content: msg.content,
               timestamp: result.rows[0].created_at
             }
-            broadcastMessageToChatRoom(ws, msg.chat_id, actualMessage)
+            broadcastMessageToChatRoom(msg.chat_id, actualMessage)
             client.isTyping = false
           } catch (error) {
             console.error(error)
@@ -184,7 +203,7 @@ export function attachWebSocket(server: Server): WebSocketServer {
             content: `${msg.sender_name} left`,
             timestamp: new Date().toISOString()
           }
-          broadcastStatusToChatRoom( msg.chat_id, leftMessage)
+          broadcastStatusToRecipient( msg.chat_id, leftMessage)
           return
       }
     });
@@ -206,7 +225,7 @@ export function attachWebSocket(server: Server): WebSocketServer {
             content: `${client.name} left`,
             timestamp: new Date().toISOString()
           }
-          broadcastStatusToChatRoom(chat_id, disconnectMessage)
+          broadcastStatusToRecipient(chat_id, disconnectMessage)
 
           if (room.size === 0) {
             rooms.delete(chat_id);

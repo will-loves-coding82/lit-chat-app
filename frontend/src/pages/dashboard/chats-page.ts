@@ -286,6 +286,8 @@ export class ChatMessageWindow extends LitElement {
   @state() private input = ""
   @state() private messages: IncomingMessage[] = []
   @state() private recipientStatusMessage: IncomingMessage | null = null;
+  @state() private recipientJoined: boolean = false
+
   @query("#messages-list") messagesListElement!: HTMLOListElement
   @query("#message-input") messageInputElement!: HTMLOListElement
   @state() typingUsers: Set<string> = new Set();
@@ -328,10 +330,10 @@ export class ChatMessageWindow extends LitElement {
     }))
   }
 
-
   updated(changedProperties: Map<string, unknown>) {
     if (changedProperties.has("chatId")) {
       console.log("chatId changed")
+      this.recipientJoined = false
       this.closeWebSocket()
       this.messages = [];
       this.recipientStatusMessage = null;
@@ -372,6 +374,28 @@ export class ChatMessageWindow extends LitElement {
       const { type, message } = JSON.parse(event.data as string) as { type: MessageType, message: IncomingMessage };
 
       switch(message.type) {
+        case "user_joined":
+          console.log("Other recipient joined")
+          this.recipientJoined = true;
+          return
+
+        case "room_state":
+          console.log("Room state", message.members)
+          if (message.members) {
+            message.members.forEach(memberId => {
+              if(String(memberId) != this.userId) {
+                this.recipientJoined = true
+              }
+            })
+          }
+          return
+        
+        case "user_left":
+          if (String(message.sender_id) !== this.userId) {
+            this.recipientJoined = false;
+          }
+          return
+
         case "message":
           if (this.recipientStatusMessage) {
             this.messages = [...this.messages.slice(0, -1)]
@@ -402,36 +426,36 @@ export class ChatMessageWindow extends LitElement {
   }
 
   protected firstUpdated(_changedProperties: PropertyValues): void {
-      // const element = this.shadowRoot?.querySelector('#message-input');
-      this.messageInputElement.addEventListener("keypress", (e) => {
-        if (e.key == "Enter") {
-          this.handleSend()
-          return
-        }
+    // const element = this.shadowRoot?.querySelector('#message-input');
+    this.messageInputElement.addEventListener("keypress", (e) => {
+      if (e.key == "Enter") {
+        this.handleSend()
+        return
+      }
 
+      const typingMessage : SenderMessage = {
+        type: MESSAGE_TYPES.USER_TYPING_START,
+        sender_id: Number(this.userId),
+        sender_name: this.auth.user?.first_name + " " + this.auth.user?.last_name,
+        chat_id: Number(this.chatId),
+        content: ""
+      }
+      this.ws!.send(JSON.stringify(typingMessage))
+
+      if (this.typingTimeout) {
+        clearTimeout(this.typingTimeout)
+      }
+
+      this.typingTimeout = setTimeout(()=> {
         const typingMessage : SenderMessage = {
-          type: MESSAGE_TYPES.USER_TYPING_START,
+          type: MESSAGE_TYPES.USER_TYPING_STOP,
           sender_id: Number(this.userId),
           sender_name: this.auth.user?.first_name + " " + this.auth.user?.last_name,
           chat_id: Number(this.chatId),
           content: ""
         }
         this.ws!.send(JSON.stringify(typingMessage))
-
-        if (this.typingTimeout) {
-          clearTimeout(this.typingTimeout)
-        }
-
-        this.typingTimeout = setTimeout(()=> {
-          const typingMessage : SenderMessage = {
-            type: MESSAGE_TYPES.USER_TYPING_STOP,
-            sender_id: Number(this.userId),
-            sender_name: this.auth.user?.first_name + " " + this.auth.user?.last_name,
-            chat_id: Number(this.chatId),
-            content: ""
-          }
-          this.ws!.send(JSON.stringify(typingMessage))
-        }, 1500)
+      }, 1500)
     })
   }
 
@@ -499,15 +523,25 @@ export class ChatMessageWindow extends LitElement {
       padding: 0 1rem;
     }
 
-    #recipient-description p {
+    #recipient-description p#recipient-name {
       margin: 0;
       padding: 0;
       color: var(--color-foreground-primary);
     }
 
-    #recipient-description p:nth-of-type(2) {
+    #recipient-name-status-wrapper {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      margin: 0;
+      padding: 0;
+    }
+
+    #recipient-description p#recipient-email {
       font-size: var(--font-size-sm);
-      color: var(--color-default)
+      color: var(--color-default);
+      margin: 0;
     }
 
     ol#messages-list {
@@ -565,6 +599,13 @@ export class ChatMessageWindow extends LitElement {
       width: 100%;
     }
 
+    .active-status-circle {
+      height: 8px;
+      width: 8px;
+      border-radius: var(--radius-full);
+      background-color: var(--color-success);
+    }
+
   `
 
   render() {
@@ -575,8 +616,11 @@ export class ChatMessageWindow extends LitElement {
             return summary.members
               .filter(m => String(m.id) !== this.userId)
               .map(recipient => html`
-                <p>${recipient.first_name} ${recipient.last_name}</p>
-                <p>${recipient.email}</p>
+                <span id="recipient-name-status-wrapper">
+                  <p id="recipient-name">${recipient.first_name} ${recipient.last_name}</p>
+                    <div id="join-status-circle" class=${classMap({'active-status-circle': this.recipientJoined})}></div>
+                </span>
+                <p id="recipient-email">${recipient.email}</p>
               `)
           }
         })}

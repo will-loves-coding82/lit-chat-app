@@ -46,6 +46,10 @@ export class DashboardRouter extends LitElement {
       z-index: 2000;
       overflow: hidden;
     }
+
+     #unauthorized-modal-header {
+      padding: 1rem;
+     }
   `
   connectedCallback() {
     super.connectedCallback();
@@ -70,8 +74,7 @@ export class DashboardRouter extends LitElement {
   render() {
     return html`
       <cds-modal id="unauthorized-modal" aria-label="" prevent-close-on-click-outside="" >
-        <cds-modal-header>
-          <cds-modal-close-button close-button-label="Close"></cds-modal-close-button>
+        <cds-modal-header id="unauthorized-modal-header">
           <cds-modal-heading>You are unauthorized. Please log in.</cds-modal-heading>
         </cds-modal-header>
         <cds-modal-footer>
