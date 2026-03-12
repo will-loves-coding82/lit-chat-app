@@ -30,6 +30,10 @@ export class Link extends LitElement {
       text-decoration: none;
       width: fit-content;
       height: fit-content;
+
+      &:hover {
+        cursor: pointer;
+      }
     }
   `
 

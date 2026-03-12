@@ -131,7 +131,7 @@ export class RootRouter extends LitElement {
 
         <nav>
           <link-component href="/" color="default">
-            <p slot="label">Home</p>
+            <p slot="label">home</p>
           </link-component>
           <span id="auth-btn-group">
             ${this.auth.isAuthenticated ?
@@ -142,7 +142,7 @@ export class RootRouter extends LitElement {
               `
               :
               html`
-              <link-component href="/login" sty->
+              <link-component href="/login">
                 <button-component variant="solid" color="primary" size="md" slot="label"><p slot="label">login</p></button-component>
               </link-component>
               <link-component href="/signup">

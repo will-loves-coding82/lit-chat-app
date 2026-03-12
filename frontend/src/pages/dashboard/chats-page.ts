@@ -1,18 +1,19 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import "@carbon/web-components/es/components/search/search.js";
 import { Task } from "@lit/task";
 import { searchUsers } from "../../api/users";
 import { IncomingMessage, Chat, User, SenderMessage, MESSAGE_TYPES, MessageType } from "../../api/types";
 import { getAllsChatsForUser, getChatMessages, getChatSummary, createChat } from "../../api/chats";
 import { consume } from "@lit/context";
 import { authContext, AuthContext } from "../../context/authContext";
-import { Message } from "../../types";
+import { classMap } from "lit/directives/class-map.js";
+import '../../components/icons/chevron-left';
+import '../../components/button';
+import "@carbon/web-components/es/components/search/search.js";
 import '../../components/icons/message-chat-circle';
 import '@carbon/web-components/es/components/form/form.js';
 import '@carbon/web-components/es/components/stack/stack.js';
 import '@carbon/web-components/es/components/text-input/text-input.js';
-import { classMap } from "lit/directives/class-map.js";
 
 // https://pyk.sh/cookbooks/typescript/how-to-debounce-a-function
 function debounce(func: (...args: any[]) => any, wait: number) {
@@ -257,7 +258,6 @@ export class ChatsPage extends LitElement {
       }
     }
 
-
     section#chat-message-container {
       flex: 1;
       width: 100%;
@@ -272,7 +272,7 @@ export class ChatsPage extends LitElement {
         justify-content: center;
       }
 
-      #empty-state-wrapper #icon {
+      #empty-state-wrapper #empty-icon {
         height: 40px;
       }
     }
@@ -333,7 +333,7 @@ export class ChatsPage extends LitElement {
           ? html`<chat-message-window .chatId=${this.activeChatId} .userId=${this.auth.user?.id?.toString() ?? ""}></chat-message-window>`
           : html`
               <div id="empty-state-wrapper">
-                <message-chat-circle-icon id="icon"></message-chat-circle-icon>
+                <message-chat-circle-icon id="empty-icon"></message-chat-circle-icon>
                 <p>Send a message to start chatting</p>
         </div>
             `
@@ -586,14 +586,16 @@ export class ChatMessageWindow extends LitElement {
       border-bottom: 1px solid var(--color-default);
       min-height: 54px;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
+      flex-direction: row;
+      align-items: center;
+      justify-content: start;
       gap: 4px;
       padding: 0 1rem;
 
-     p#recipient-name {
+      h4#recipient-name {
         margin: 0;
         padding: 0;
+        font-weight: 500;
         color: var(--color-foreground-primary);
       }
 
@@ -620,7 +622,6 @@ export class ChatMessageWindow extends LitElement {
       }
     }
 
-
     ol#messages-list {
       height: 100%;
       width: 100%;
@@ -636,7 +637,7 @@ export class ChatMessageWindow extends LitElement {
 
     .message-bubble {
       border-radius: 16px;
-      padding: 0.5rem 1rem;
+      padding: 0.75rem;
       max-width: 55%;
       animation: springBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
@@ -649,7 +650,6 @@ export class ChatMessageWindow extends LitElement {
       animation: slideUp 0.2s cubic-bezier(1, 0, 0, 1);
     }
   
-
     .own-message {
       align-self: flex-end;
       width: fit-content;
@@ -661,7 +661,6 @@ export class ChatMessageWindow extends LitElement {
     .recipient-message {
       width: fit-content;
       height: fit-content;
-      padding: 8px;
       background-color: var(--background-secondary);
     }
 
@@ -716,11 +715,14 @@ export class ChatMessageWindow extends LitElement {
             return summary.members
               .filter(m => String(m.id) !== this.userId)
               .map(recipient => html`
-                <span id="recipient-name-status-wrapper">
-                  <p id="recipient-name">${recipient.first_name} ${recipient.last_name}</p>
-                    <div id="join-status-circle" class=${classMap({'active-status-circle': this.recipientJoined})}></div>
-                </span>
-                <p id="recipient-email">${recipient.email}</p>
+                <header>
+                  <span id="recipient-name-status-wrapper">
+                    <h4 id="recipient-name">${recipient.first_name} ${recipient.last_name}</h4>
+                      <div id="join-status-circle" class=${classMap({'active-status-circle': this.recipientJoined})}></div>
+                  </span>
+                  <p id="recipient-email">${recipient.email}</p>
+                </header>
+
               `)
           }
         })}

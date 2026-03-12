@@ -69,7 +69,7 @@ export class DashboardRouter extends LitElement {
 
   private onRouteChange = () => {
     const match = window.location.pathname.match(/\/chats\/(.+)/);
-    this.activeChatId = match?.[1];
+    this.activeChatId = match?.[1] ?? undefined
   }
 
   private unauthorizedListener = (e: CustomEvent) => {
@@ -89,9 +89,14 @@ export class DashboardRouter extends LitElement {
       </cds-modal-footer>
       </cds-modal>
       <nav>
-        <link-component href="/" color="default">
-          <p slot="label">Home</p>
-        </link-component>
+        <span>
+          <link-component href="/" color="default">
+            <p slot="label">home / </p>
+          </link-component>
+          <link-component href="/dashboard/chats" color="primary" @click=${() => window.location.href = "/dashboard/chats"}>
+            <p slot="label">chats</p>
+          </link-component>
+        </span>
         <span id="auth-btn-group">
           <p style="color: black;">${this.auth.user?.first_name}</p>
           <button-component @click=${this.handleLogout} variant="solid" color="primary" size="md" slot="label"><p slot="label">log out</p></button-component>

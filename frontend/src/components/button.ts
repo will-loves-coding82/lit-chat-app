@@ -13,6 +13,8 @@ export class Button extends LitElement {
   
   // The reflect property allows us to map the presence of the variable to a true value
   @property({ type: Boolean, reflect: true}) fullWidth: boolean = false
+  @property({ type: Boolean, reflect: true}) iconOnly: boolean = false
+
   @property({ type: String }) size: ButtonSize = "md"
   @property({ type: String}) radius: ButtonRadius = "md"
     
@@ -41,20 +43,26 @@ export class Button extends LitElement {
     full: { borderRadius: "var(--radius-full)" },
   }
 
-  private get buttonStyles() {
-    const color = Button.colorMap[this.color]
-    const size = Button.sizeMap[this.size]
-    const radius = Button.radiusMap[this.radius]
-    const fullWidth = this.fullWidth ? { width: "100%"} : { width: "fit-content" }
-    const mergedStyles = {...size, ...radius, ...fullWidth}
+ private get buttonStyles() {
+  const color = Button.colorMap[this.color]
+  const size = Button.sizeMap[this.size]
+  const radius = Button.radiusMap[this.radius]
+  const fullWidth = this.fullWidth ? { width: "100%"} : { width: "fit-content" }
 
-    switch (this.variant) {
-      case 'solid': return { background: color, color: 'white', border: color, ...mergedStyles};
-      case 'soft': return { background: `color-mix(in srgb, ${color} 20%, transparent)`, color: color, border: `1px solid ${color}`, ...mergedStyles};
-      case 'outline': return { background: 'transparent', color: color, border: `1px solid ${color}`, ...mergedStyles};
-      case 'ghost': return { background: 'transparent', border: 'none', color: color, ...size, ...radius, ...fullWidth };
-    }
+  // Remove padding if iconOnly
+  const sizeStyles = this.iconOnly
+    ? { fontSize: size.fontSize }
+    : size;
+
+  const mergedStyles = { ...sizeStyles, ...radius, ...fullWidth }
+
+  switch (this.variant) {
+    case 'solid': return { background: color, color: 'white', border: color, ...mergedStyles };
+    case 'soft': return { background: `color-mix(in srgb, ${color} 20%, transparent)`, color: color, border: `1px solid ${color}`, ...mergedStyles };
+    case 'outline': return { background: 'transparent', color: color, border: `1px solid ${color}`, ...mergedStyles };
+    case 'ghost': return { background: 'transparent', border: 'none', color: color, ...sizeStyles, ...radius, ...fullWidth };
   }
+}
 
   private handleClick = () => {
     this.onPress?.()
@@ -64,17 +72,24 @@ export class Button extends LitElement {
    :host {
       display: inline-flex;
       width: fit-content;
+      box-sizing: border-box;
+
+      &:hover {
+        cursor: pointer;
+        opacity: 0.8;
+        transition: all 0.2s ease
+      }
     }
 
     :host([fullWidth]) {
       width: 100%;
     }
 
-
-    button:hover {
-      cursor: pointer;
-      opacity: 0.8;
-      transition: all 0.2s ease
+    :host([iconOnly]) {
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     button:active {
@@ -88,6 +103,7 @@ export class Button extends LitElement {
   render() {
     return html`
       <button @click =${this.handleClick} style=${styleMap(this.buttonStyles)}>
+        <slot class="icon" name="icon"></slot>
         <slot class="label" name="label"></slot>
       </button>
     `
