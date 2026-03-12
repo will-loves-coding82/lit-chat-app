@@ -4,7 +4,7 @@ import "@carbon/web-components/es/components/search/search.js";
 import { Task } from "@lit/task";
 import { searchUsers } from "../../api/users";
 import { IncomingMessage, Chat, User, SenderMessage, MESSAGE_TYPES, MessageType } from "../../api/types";
-import { getAllsChatsForUser, getChatMessages, getChatSummary, getOrCreateChat } from "../../api/chats";
+import { getAllsChatsForUser, getChatMessages, getChatSummary, createChat } from "../../api/chats";
 import { consume } from "@lit/context";
 import { authContext, AuthContext } from "../../context/authContext";
 import { Message } from "../../types";
@@ -33,7 +33,7 @@ export class ChatsPage extends LitElement {
   @state() auth!: AuthContext;
   @property() activeChatId: string | undefined;  // driven by dashboard-router
 
-  @state() selectedRecipient: User | undefined = undefined
+  @state() selectedRecipient: User | null = null
   @state() chatsForUser: Array<Chat> = []
   @state() searchMatches: Array<User> = []
   @state() isSearchFocused = false;
@@ -55,22 +55,31 @@ export class ChatsPage extends LitElement {
     },
     onComplete: (chats) => { this.chatsForUser = chats },
     onError: (error) => { console.log(error) },
-    args: () => [this.auth.user?.id]
+    args: () => [this.auth.user?.id, this.activeChatId]
   })
 
   private getOrCreateChatTask = new Task(this, {
     task: async ([userId, recipientId]: readonly [number, number]) => {
-      if (!userId || !recipientId) throw new Error("User ID or recipient ID is undefined");
-      const res = await getOrCreateChat(userId, recipientId);
+      if (!userId || !recipientId ) throw new Error("User ID or recipient ID is undefined");
+
+      const existingChat = this.chatsForUser.find(chat => chat.recipient.id === recipientId);
+      if (existingChat) {
+        return existingChat.id;
+      }
+
+      const res = await createChat(userId, recipientId);
       if (res.error) {
         if (res.error.status == 401) this.dispatchUnauthorized(res.error.message);
         throw res.error;
       }
-      return res.chat?.id;
+
+      console.log(`Create chat task with recipient ${recipientId}: got chatId ${res.chatId}`)
+      return res.chatId;
     },
     onComplete: (chatId) => {
       window.history.pushState({}, '', `/dashboard/chats/${chatId}`);
       window.dispatchEvent(new PopStateEvent('popstate'));
+      this.onSearchBlur();
     },
     onError: (error) => { console.error(error) }
   })
@@ -87,6 +96,13 @@ export class ChatsPage extends LitElement {
     onComplete: (matches) => { this.searchMatches = matches },
     onError: (error) => { console.error(error) }
   })
+
+  updated(changedProperties: Map<string, unknown>) {
+  if (changedProperties.has('chatId')) {
+    // Reset all state when chat changes
+    this.selectedRecipient = null;
+  }
+}
 
   private dispatchUnauthorized(message: string) {
     this.dispatchEvent(new CustomEvent('unauthorized', {
@@ -108,9 +124,9 @@ export class ChatsPage extends LitElement {
     this.chatsList.style.display = "block"
   }
 
-  _handleSelectRecipient(recipient: User) {
-    this.onSearchBlur();
+  handleSelectRecipient(recipient: User) {
     if (this.auth.user?.id !== undefined) {
+      this.searchMatches = [];
       this.selectedRecipient = recipient
       this.getOrCreateChatTask.run([this.auth.user.id, recipient.id]);
     }
@@ -126,99 +142,152 @@ export class ChatsPage extends LitElement {
     this.searchTask.run([value]);
   }, 1000)
 
-    static styles = css`
-  :host {
+  static styles = css`
+    :host {
       display: flex;
+      flex-direction: row;
       box-sizing: border-box;
       overflow-y: hidden;
-      height: 100vh;  /* adjust 50px to match your header height */
+      height: 100vh;
     }
 
     aside#chats-tab  {
       height: 100%;
       padding: 5rem 1rem;
-      width: 420px;
+      box-sizing: border-box;
+      min-width: 300px;
       background-color: var(--background-primary);
       border-right: 1px solid var(--color-default);
+      transition: all 0.2s ease;
+
+      h1 {
+        color: var(--color-foreground-primary);
+      }
+
+      ol#chats-list {
+        list-style: none;
+        padding: 0;
+        height: 100%;
+        overflow-y: auto;
+
+        .chat-list-item {
+          padding: 0.5rem 1rem;
+          box-sizing: border-box;
+          border-radius: var(--radius-md);
+          margin: 0.5rem 0;
+
+          &:hover {
+            cursor: pointer;
+            background-color: var(--background-secondary);
+          }
+        }
+      }
     }
 
-    aside#chats-tab h1 {
-      color: var(--color-foreground-primary);
-      /* overflow-y: scroll; */
+
+    @media (max-width: 800px) {
+      aside#chats-tab {
+        z-index: 999;
+        min-width: 0;
+        width: 0;
+        opacity: 0;
+        padding-inline: 0;
+        transition: width 0.2s ease, min-width 0.2s ease, padding 0.2s ease;
+      }
+
+      section#chat-message-container {
+        width: 100vw;     
+      }
+
+      aside#chats-tab.no-chat-id {
+        position: absolute;
+        opacity: 1;
+        width: 100%;
+        padding-inline: 1rem;
+        box-sizing: border-box;
+      }
     }
 
     ol#search-matches-list {
       list-style: none;
       padding: 0;
+      box-sizing: border-box;
       height: 100%;
-    }
-
-    ol#search-matches-list li.match-item {
-      display: flex;
-      flex-direction: column;
-      height: fit-content;
-      padding: 0.5rem;
-      box-sizing: border-box;
-      border-radius: var(--radius-sm);
-      width: 100%;
       overflow-y: auto;
+
+      li.match-item {
+        display: flex;
+        flex-direction: column;
+        height: fit-content;
+        padding: 0.5rem;
+        box-sizing: border-box;
+        border-radius: var(--radius-sm);
+        width: 100%;
+        overflow-y: auto;
+        animation: slideDown 0.2s cubic-bezier(1, 0, 0, 1) forwards;
+
+        &:hover {
+          background-color: var(--background-secondary);
+          cursor: pointer;
+        }
+
+        p {
+          margin: 4px;
+        }
+
+        p.match-email {
+          font-size: var(--font-size-sm);
+          color: var(--color-default);
+        }
+      }
+     }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        max-height: 0;
+        padding-block: 0;
+        transform: translateY(-12px);
+      }
+      to {
+        opacity: 1;
+        max-height: 200px;
+        padding-block: 0.5rem;
+        transform: translateY(0px);
+      }
     }
 
-    ol#search-matches-list li.match-item:hover {
-      background-color: var(--background-secondary);
-      cursor: pointer;
-    }
-
-    ol#search-matches-list li.match-item p {
-      margin: 4px;
-    }
-
-    ol#search-matches-list p.match-email {
-      font-size: var(--font-size-sm);
-      color: var(--color-default);
-    }
-
-    ol#chats-list {
-      list-style: none;
-      padding: 0;
-      overflow-y: auto;
-    }
-
-    ol#chats-list .chat-list-item {
-      padding: 0.5rem 1rem;
-      box-sizing: border-box;
-      border-radius: var(--radius-md);
-    }
-
-    ol#chats-list .chat-list-item:hover {
-      cursor: pointer;
-      background-color: var(--background-secondary);
-    }
 
     section#chat-message-container {
+      flex: 1;
       width: 100%;
       height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
 
-    #empty-state-wrapper {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
+      #empty-state-wrapper {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
 
-    #empty-state-wrapper #icon {
-      height: 40px;
+      #empty-state-wrapper #icon {
+        height: 40px;
+      }
     }
   `
 
   render() {
     return html`
-      <aside id="chats-tab">
+      <aside id="chats-tab" class=${classMap({"has-chat-id": this.activeChatId !== undefined, "no-chat-id": this.activeChatId == undefined})}>
         <cds-search
           id="search"
+          @cds-search-input=${(e: CustomEvent) => {
+            if (e.detail.value === '') {
+              this.onSearchBlur()
+            }
+          }}
           @input=${(e: Event) => this.handleSearch((e.target as HTMLInputElement).value)}
           size="lg"
           close-button-label-text="Clear search input"
@@ -250,7 +319,7 @@ export class ChatsPage extends LitElement {
             complete: () => this.searchMatches.length === 0
               ? html`<p>no results found</p>`
               : this.searchMatches.map((match) => html`
-                  <li class="match-item" @click=${() => this._handleSelectRecipient(match)} id=${match.id}>
+                  <li class="match-item" @click=${() => this.handleSelectRecipient(match)} id=${match.id}>
                     <p class="match-name">${match.first_name} ${match.last_name}</p>
                     <p class="match-email">${match.email}</p>
                   </li>
@@ -263,10 +332,10 @@ export class ChatsPage extends LitElement {
         ${this.activeChatId !== undefined
           ? html`<chat-message-window .chatId=${this.activeChatId} .userId=${this.auth.user?.id?.toString() ?? ""}></chat-message-window>`
           : html`
-              <span id="empty-state-wrapper">
+              <div id="empty-state-wrapper">
                 <message-chat-circle-icon id="icon"></message-chat-circle-icon>
                 <p>Send a message to start chatting</p>
-              </span>
+        </div>
             `
         }
       </section>
@@ -515,34 +584,42 @@ export class ChatMessageWindow extends LitElement {
     #recipient-description {
       color: var(--color-foreground-primary);
       border-bottom: 1px solid var(--color-default);
-      height: 4rem;
+      min-height: 54px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       gap: 4px;
       padding: 0 1rem;
+
+     p#recipient-name {
+        margin: 0;
+        padding: 0;
+        color: var(--color-foreground-primary);
+      }
+
+      #recipient-name-status-wrapper {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+
+        .active-status-circle {
+          height: 8px;
+          width: 8px;
+          border-radius: var(--radius-full);
+          background-color: var(--color-success);
+        }
+      }
+
+      p#recipient-email {
+        font-size: var(--font-size-sm);
+        color: var(--color-default);
+        margin: 0;
+      }
     }
 
-    #recipient-description p#recipient-name {
-      margin: 0;
-      padding: 0;
-      color: var(--color-foreground-primary);
-    }
-
-    #recipient-name-status-wrapper {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 4px;
-      margin: 0;
-      padding: 0;
-    }
-
-    #recipient-description p#recipient-email {
-      font-size: var(--font-size-sm);
-      color: var(--color-default);
-      margin: 0;
-    }
 
     ol#messages-list {
       height: 100%;
@@ -558,8 +635,10 @@ export class ChatMessageWindow extends LitElement {
     }
 
     .message-bubble {
-      border-radius: 8px;
+      border-radius: 16px;
       padding: 0.5rem 1rem;
+      max-width: 55%;
+      animation: springBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
 
     .status-message {
@@ -567,7 +646,9 @@ export class ChatMessageWindow extends LitElement {
       font-size: var(--font-size-sm);
       color: var(--color-default);
       margin-top: 1rem;
+      animation: slideUp 0.2s cubic-bezier(1, 0, 0, 1);
     }
+  
 
     .own-message {
       align-self: flex-end;
@@ -593,19 +674,38 @@ export class ChatMessageWindow extends LitElement {
       flex-direction: row;
       justify-content: space-between;
       align-items: center;
+
+      #message-input {
+        width: 100%;
+      }
     }
 
-    #send-message-form #message-input {
-      width: 100%;
+    @keyframes springBounce {
+      0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(10px);
+      }
+      50% {
+        transform: scale(1.05) translateY(-2px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
     }
 
-    .active-status-circle {
-      height: 8px;
-      width: 8px;
-      border-radius: var(--radius-full);
-      background-color: var(--color-success);
+    @keyframes slideUp {
+      from {
+        height: 0;
+        opacity: 0;
+        transform: translateY(12px)
+      }
+      to {
+        height: 16px;
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-
   `
 
   render() {

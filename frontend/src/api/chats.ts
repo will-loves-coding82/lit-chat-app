@@ -25,10 +25,11 @@ export async function getAllsChatsForUser(userId: number) : Promise<GetAllChatsR
   }
 }
 
-export async function getOrCreateChat(userId: number, recipientId: number) : Promise<GetOrCreateChatResponse> {
+export async function createChat(userId: number, recipientId: number) : Promise<GetOrCreateChatResponse> {
   try {
+    console.log("Creating new chat")
     const res = await fetch(
-      `${API_URL}/chats/findOrCreate`, {
+      `${API_URL}/chats/create`, {
         method:'POST', 
         headers: {
           'Content-Type': 'application/json',
@@ -39,14 +40,15 @@ export async function getOrCreateChat(userId: number, recipientId: number) : Pro
 
     if (!res.ok) {
       const errorBody = JSON.parse(await res.text())
-      return { error: new APIResponseError(errorBody.error, res.status), chat: null}
+      return { error: new APIResponseError(errorBody.error, res.status), chatId: null}
     }
 
-    const { chat } = await res.json()
-    return { error: null, chat: chat}
+    const { chatId } = await res.json()
+    console.log("Got chat id: ", chatId)
+    return { error: null, chatId: chatId}
   }
   catch(error) {
-    return {error: new APIResponseError("An unexpected error occurred", 500), chat: null}
+    return {error: new APIResponseError("An unexpected error occurred", 500), chatId: null}
   }
 }
 

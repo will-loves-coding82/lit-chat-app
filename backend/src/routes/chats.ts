@@ -63,7 +63,6 @@ chatsRouter.get('/:chatId/messages/', authMiddleware, async (_req: Request, res:
   console.log('Handling GET request /chats/:chatId/messages')
 
   try {
-    const limit = Math.min(parseInt((_req.query.limit as string) || '50'), 200);
     const { rows } = await pool.query(
       'SELECT * FROM lit_db.messages WHERE chat_id = $1 ORDER BY created_at ASC', [chatId]
     );
@@ -76,37 +75,38 @@ chatsRouter.get('/:chatId/messages/', authMiddleware, async (_req: Request, res:
 });
 
 
-chatsRouter.post('/findOrCreate', authMiddleware, async (_req: Request, res: Response) => {
-  console.log('Handling POST request /chats/findOrCreate')
+chatsRouter.post('/create', authMiddleware, async (_req: Request, res: Response) => {
+  console.log('Handling POST request /chats/find')
   const { userId, recipientId } = _req.body
 
   if (recipientId == userId) {
     return res.status(400).json({error: "Making a personal chat is not allowed"})
   }
   try {
-    const chatExistsResult = await pool.query(
+    const { rows: chatRows } = await pool.query(
       `
-        SELECT * from lit_db.chats c
+        SELECT c.id from lit_db.chats c
         JOIN lit_db.members m1 ON m1.chat_id = c.id AND m1.member_id = $1
         JOIN lit_db.members m2 ON m2.chat_id = c.id AND m2.member_id = $2 
         LIMIT 1;
       `, [userId, recipientId]
     );
 
-    if (chatExistsResult.rows.length == 1) {
-      return res.json({chat: chatExistsResult.rows[0]})
+    if (chatRows.length > 0) {
+      console.log(`Found existing chat for user ${userId} and recipient ${recipientId}: chat ${chatRows[0].id}`)
+      return res.json({chatId: chatRows[0].id})
     }
 
-    const { rows } = await pool.query(
+    const { rows: insertRows } = await pool.query(
       `INSERT INTO lit_db.chats DEFAULT VALUES RETURNING *`
     )
-    const chatId = rows[0].id
+    const chatId = insertRows[0].id
     await pool.query(
       `INSERT INTO lit_db.members (chat_id, member_id) VALUES($1, $2), ($1, $3)`,
       [chatId, userId, recipientId]
     )
 
-    return res.json({chat: rows[0]})
+    return res.json({chatId: insertRows[0].id})
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: `Failed to find or create chat: ${error}` })

@@ -90,7 +90,7 @@ export type GetAllChatsResponse = {
 
 export type GetOrCreateChatResponse = {
   error: APIResponseError | null
-  chat: Chat | null
+  chatId: number | null
 }
 
 export type GetMessagesResponse = {
