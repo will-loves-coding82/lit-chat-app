@@ -583,6 +583,10 @@ export class ChatMessageWindow extends LitElement {
     }
 
     #recipient-description {
+      position: fixed;
+      width: 100%;
+      z-index: 1000;
+      background-color: var(--background-primary);
       color: var(--color-foreground-primary);
       border-bottom: 1px solid var(--color-default);
       min-height: 54px;
@@ -624,6 +628,8 @@ export class ChatMessageWindow extends LitElement {
     }
 
     ol#messages-list {
+      margin-top: 54px;
+      padding: 1rem 1rem 0rem 1rem!important;
       height: 100%;
       width: 100%;
       overflow-y: auto;
@@ -694,22 +700,24 @@ export class ChatMessageWindow extends LitElement {
 
 
     #send-message-form {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
       height: fit-content;
       display: flex;
       align-items: center;
       justify-content: start;
       gap: 16px;
       box-sizing: border-box;
-      padding: 0 1rem 0.5rem;
+      padding: 0.5rem 1rem;
+      background-color: var(--background-primary);
 
-      #message-input, #send-message-button {
-        font-size: 16px;
-        justify-self: center;
-        align-self: center;
+      @media (min-width: 800px) {
+        justify-content: space-between;
+        left: 330px;
+        width: calc(100% - 330px);
       }
-      
     }
-
   `
 
   render() {
