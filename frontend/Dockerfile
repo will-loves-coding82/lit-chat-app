@@ -20,4 +20,5 @@ RUN npm run build
 # container's internal port 80 which is later mapped to 8080 on the host machine
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
