@@ -1,5 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
+import { WSS_URL } from "../../api/constants";
 import { Task } from "@lit/task";
 import { searchUsers } from "../../api/users";
 import { IncomingMessage, Chat, User, SenderMessage, MESSAGE_TYPES, MessageType } from "../../api/types";
@@ -14,7 +15,6 @@ import '../../components/icons/message-chat-circle';
 import '@carbon/web-components/es/components/form/form.js';
 import '@carbon/web-components/es/components/stack/stack.js';
 import '@carbon/web-components/es/components/text-input/text-input.js';
-import { API_URL, WSS_URL } from "../../api/constants";
 
 // https://pyk.sh/cookbooks/typescript/how-to-debounce-a-function
 function debounce(func: (...args: any[]) => any, wait: number) {
@@ -665,24 +665,6 @@ export class ChatMessageWindow extends LitElement {
       background-color: var(--background-secondary);
     }
 
-    #send-message-form {
-      position: fixed;
-      bottom: 0;
-      background-color: var(--background-primary);
-      width: 100%;
-      padding: 1rem;
-      box-sizing: border-box;
-      gap: 2rem;
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
-
-      #message-input {
-        width: 100%;
-      }
-    }
-
     @keyframes springBounce {
       0% {
         opacity: 0;
@@ -709,6 +691,23 @@ export class ChatMessageWindow extends LitElement {
         transform: translateY(0);
       }
     }
+
+
+    #send-message-form {
+      height: fit-content;
+      display: flex;
+      align-items: center;
+      justify-content: start;
+      gap: 16px;
+      box-sizing: border-box;
+      padding: 0 1rem 0.5rem;
+
+      #message-input, #send-message-button {
+        justify-self: center;
+        align-self: center;
+      }
+    }
+
   `
 
   render() {
@@ -752,8 +751,8 @@ export class ChatMessageWindow extends LitElement {
       </ol>
 
       <form id="send-message-form">
-        <cds-text-input @input=${(e: Event) => this.input = (e.target as HTMLInputElement).value} id="message-input" placeholder="type something"></cds-text-input>
-        <button-component @click=${this.handleSend} variant="solid" color="primary" radius="sm" size="md"><p slot="label">send</p></button-component>
+        <cds-text-input id="message-input" @input=${(e: Event) => this.input = (e.target as HTMLInputElement).value} placeholder="type something"></cds-text-input>
+        <button-component id="send-message-button" @click=${this.handleSend} variant="solid" color="primary" radius="sm" size="md"><p slot="label">send</p></button-component>
       </form>
     `
   }
