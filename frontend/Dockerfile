@@ -4,6 +4,10 @@
 # binaries and assets in the container's /app/dist/ folder
 FROM node:20-alpine AS build
 WORKDIR /app
+
+#https://docs.railway.com/builds/dockerfiles#using-variables-at-build-time
+ARG VITE_API_URL
+RUN echo $VITE_API_URL
 COPY package*.json ./
 RUN npm install
 COPY . .
