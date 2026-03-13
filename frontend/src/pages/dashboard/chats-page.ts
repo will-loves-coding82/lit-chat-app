@@ -14,7 +14,7 @@ import '../../components/icons/message-chat-circle';
 import '@carbon/web-components/es/components/form/form.js';
 import '@carbon/web-components/es/components/stack/stack.js';
 import '@carbon/web-components/es/components/text-input/text-input.js';
-import { API_URL } from "../../api/constants";
+import { API_URL, WSS_URL } from "../../api/constants";
 
 // https://pyk.sh/cookbooks/typescript/how-to-debounce-a-function
 function debounce(func: (...args: any[]) => any, wait: number) {
@@ -421,7 +421,7 @@ export class ChatMessageWindow extends LitElement {
 
   private connectWs() {
     const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-    this.ws = new WebSocket(`${protocol}://${API_URL}/ws`);
+    this.ws = new WebSocket(`${WSS_URL}/ws`);
 
     this.ws.onopen = () => { 
       const joinMessage : SenderMessage = {
