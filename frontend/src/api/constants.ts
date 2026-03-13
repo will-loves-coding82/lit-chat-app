@@ -1,2 +1,3 @@
-export const API_URL = `http://${import.meta.env.VITE_API_URL}`
-export const WSS_URL = `ws://${import.meta.env.VITE_WSS_URL}`
+// Change these to http and ws for local development
+export const API_URL = `https://${import.meta.env.VITE_API_URL}`
+export const WSS_URL = `wss://${import.meta.env.VITE_WSS_URL}`
