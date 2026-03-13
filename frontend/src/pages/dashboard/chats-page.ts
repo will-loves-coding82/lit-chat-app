@@ -667,7 +667,6 @@ export class ChatMessageWindow extends LitElement {
 
     #send-message-form {
       position: fixed;
-      left: 0;
       bottom: 0;
       background-color: var(--background-primary);
       width: 100%;
