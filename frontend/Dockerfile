@@ -7,7 +7,7 @@ WORKDIR /app
 
 #https://docs.railway.com/builds/dockerfiles#using-variables-at-build-time
 ARG VITE_API_URL
-ARG WSS_API_URL
+ARG VITE_WSS_URL
 
 RUN echo $VITE_API_URL
 RUN echo $VITE_WSS_URL
