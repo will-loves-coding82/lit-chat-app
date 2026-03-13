@@ -8,7 +8,7 @@ import { authRouter } from './routes/auth.js';
 import { chatsRouter } from './routes/chats.js';
 
 const app = express();
-const allowedOrigins = ['https://lit-frontend-production.up.railway.app', 'http://localhost'];
+const allowedOrigins = ['https://lit-frontend-production.up.railway.app', 'http://localhost:5173'];
 
 app.use(cors({
   origin: allowedOrigins,
