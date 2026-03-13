@@ -11,7 +11,10 @@ const app = express();
 const allowedOrigins = ['https://lit-frontend-production.up.railway.app', 'http://localhost'];
 
 app.use(cors({
-  origin: allowedOrigins
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // Required if you send cookies or Authorization headers
 }));
 
 app.use(express.json());
