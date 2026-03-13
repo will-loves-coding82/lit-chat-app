@@ -17,9 +17,9 @@ app.use(cors({
 app.use(express.json());
 
 export const router = Router()
-app.use('/api/auth/', authRouter);
-app.use('/api/users/', usersRouter);
-app.use('/api/chats/', chatsRouter);
+app.use('/auth/', authRouter);
+app.use('/users/', usersRouter);
+app.use('/chats/', chatsRouter);
 
 const server = createServer(app);
 attachWebSocket(server);
