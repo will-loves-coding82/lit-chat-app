@@ -703,9 +703,11 @@ export class ChatMessageWindow extends LitElement {
       padding: 0 1rem 0.5rem;
 
       #message-input, #send-message-button {
+        font-size: 16px;
         justify-self: center;
         align-self: center;
       }
+      
     }
 
   `
@@ -751,7 +753,7 @@ export class ChatMessageWindow extends LitElement {
       </ol>
 
       <form id="send-message-form">
-        <cds-text-input id="message-input" @input=${(e: Event) => this.input = (e.target as HTMLInputElement).value} placeholder="type something"></cds-text-input>
+        <cds-text-input size="md" id="message-input" @input=${(e: Event) => this.input = (e.target as HTMLInputElement).value} placeholder="type something"></cds-text-input>
         <button-component id="send-message-button" @click=${this.handleSend} variant="solid" color="primary" radius="sm" size="md"><p slot="label">send</p></button-component>
       </form>
     `
