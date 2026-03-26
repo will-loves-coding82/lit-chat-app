@@ -629,14 +629,13 @@ export class ChatMessageWindow extends LitElement {
 
     ol#messages-list {
       margin-top: 54px;
-      padding: 1rem 1rem 0rem 1rem!important;
+      padding: 1rem 1rem 5rem 1rem;
       height: 100%;
       width: 100%;
       overflow-y: auto;
       overflow-x: hidden;
       list-style: none;
       box-sizing: border-box;
-      padding: 0rem 1rem;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -699,6 +698,11 @@ export class ChatMessageWindow extends LitElement {
     }
 
 
+    cds-text-input::part(input) {
+      padding-inline-start: 0.5rem;
+      font-size: 16px;
+    }
+
     #send-message-form {
       position: fixed;
       bottom: 0;
@@ -714,8 +718,8 @@ export class ChatMessageWindow extends LitElement {
 
       @media (min-width: 800px) {
         justify-content: space-between;
-        left: 330px;
-        width: calc(100% - 330px);
+        left: 305px;
+        width: calc(100% - 320px);
       }
     }
   `

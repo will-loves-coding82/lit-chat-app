@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS lit_db.users (
 );
 
 CREATE TABLE IF NOT EXISTS lit_db.chats (
-  id   SERIAL PRIMARY KEY,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id            SERIAL PRIMARY KEY,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS lit_db.members (
