@@ -584,6 +584,7 @@ export class ChatMessageWindow extends LitElement {
 
     #recipient-description {
       position: fixed;
+      top: 4rem;
       width: 100%;
       z-index: 1000;
       background-color: var(--background-primary);
