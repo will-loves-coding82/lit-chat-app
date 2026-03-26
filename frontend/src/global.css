@@ -29,3 +29,8 @@
   --font-size-lg: 1.2rem;
   --font-size-xl: 1.5rem;
 }
+
+/* Prevent iOS Safari auto-zoom on focus (requires font-size >= 16px) */
+cds-text-input::part(input) {
+  font-size: 16px !important;
+}

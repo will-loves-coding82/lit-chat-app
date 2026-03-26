@@ -700,7 +700,6 @@ export class ChatMessageWindow extends LitElement {
 
     cds-text-input::part(input) {
       padding-inline-start: 0.5rem;
-      font-size: 16px;
     }
 
     #send-message-form {
