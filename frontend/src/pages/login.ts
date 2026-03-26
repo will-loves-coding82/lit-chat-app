@@ -13,12 +13,17 @@ import { authContext, AuthContext } from '../context/authContext';
 export class LogIn extends LitElement {
   @state() private _email = ""
   @state() private _password = ""
+  @state() private _errorMessage = ""
   
   @consume({ context: authContext, subscribe: true })
   @state() auth!: AuthContext;
   
   private _logInTask = new Task(this, {
     task: async() => {
+      if (this._password.length == 0 || this._email.length == 0) {
+        this._errorMessage = "Email or password cannot be empty"
+        return
+      }
       const res = await login(this._email, this._password)
       if (res.error) {
         throw res.error
@@ -37,6 +42,7 @@ export class LogIn extends LitElement {
     },
     onError: (error) => {
       console.log("Login failed: ", error)
+      this._errorMessage = (error as Error).message || "Login failed. Please try again."
       this.auth.setAuth({
         user: null,
         isAuthenticated: false
@@ -92,6 +98,13 @@ export class LogIn extends LitElement {
       border-radius: var(--radius-lg) !important;
       margin: 0.5rem 0;
     }
+
+    #error-message {
+      color: #ef4444;
+      font-size: var(--font-size-sm);
+      margin-top: 0.75rem;
+      text-align: center;
+    }
   `;
 
   render() {
@@ -109,6 +122,7 @@ export class LogIn extends LitElement {
           <span id="submit-button-wrapper" >
             <button-component @click=${this.handleLogIn} fullWidth style="margin-top: 1rem" variant="solid" color="primary" radius="sm" size="md"><p slot="label">log in</p></button-component>
           </span>
+          ${this._errorMessage ? html`<p id="error-message">${this._errorMessage}</p>` : ''}
       </cds-form>
     `
   }
